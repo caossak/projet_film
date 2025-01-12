@@ -14,8 +14,9 @@
 library(rvest)
 library(tidyverse)
 library(dplyr)
+library(httr)
 
-###Récupération de la liste de films de l'année 2000
+# ----  Films 2000 : Récupération de la liste de films de l'année 2000 ----
 
 
 url_film <- "https://fr.wikipedia.org/wiki/Liste_de_films_fran%C3%A7ais_sortis_en_2000"
@@ -28,7 +29,7 @@ films_table_html <- data_html %>% html_node("table.wikitable") # Identifier la c
 rows <- films_table_html %>% html_nodes("tr")
 
 # Extraire les informations des titres et des liens
-films_data <- rows %>%
+films_2000 <- rows %>%
   lapply(function(row) {
     titre_node <- row %>% html_node("td:nth-child(1) a") # Première colonne avec le titre et le lien
     titre <- titre_node %>% html_text(trim = TRUE)       # Texte du titre
@@ -40,10 +41,10 @@ films_data <- rows %>%
   bind_rows() # Convertir en data frame
 
 # Nettoyer les données pour retirer les lignes vides
-films_data <- films_data %>% filter(!is.na(Titre))
+films_2000 <- films_2000 %>% filter(!is.na(Titre))
 
 # Afficher un aperçu des résultats
-print(films_data)
+print(films_2000)
 # ***************************************************************
 
 # ---- Liste films : Récupération depuis les pages wikipedia des films de l'année courante(-1) à l'année minimum ----
@@ -86,6 +87,7 @@ for (annee in periode) {
   
   # Nettoyer les données pour retirer les lignes vides
   films_data_temp <- films_data_temp %>% filter(!is.na(Titre))
+  films_data_temp$annee = annee
   if (annee == annee_min) {
     films <-films_data_temp
   }
@@ -106,7 +108,7 @@ films$url_allocine <-NA
 
 #### Recherche des liens IMDB et allocine depuis les pages wikipedia de la table films
 for (f in 1:nrow(films)){
-for (f in 1:20){
+#for (f in 1:20){ ## pour tester que sur les 20 premières lignes
   url <-as.character(films[f,"lien_wikipedia"])
   html_film<-read_html(url)
   print(url)
@@ -138,15 +140,41 @@ for (f in 1:20){
   }
 }
 
-summary(data)
+write_csv(films,"films.csv")
 
-html_allocine <- read_html("https://www.allocine.fr/film/fichefilm_gen_cfilm=24536.html")
+# ***************************************************************
 
-# Afficher un aperçu des résultats
-print(films_data)
+# ---- Recup allocine ----
+
+# ***************************************************************
+
+url_allocine <- "https://www.allocine.fr/film/fichefilm_gen_cfilm=24536.html"
+
+html_allocine <- read_html(url_allocine)
+page <- read_html(url_allocine, user_agent("Mozilla/5.0"))
 
 
+# Extraire la note presse
+note_presse <- html_allocine %>%
+  html_node(".rating-item:nth-child(1) .stareval-note") %>% # Sélecteur CSS pour la note presse
+  html_text(trim = TRUE)
 
+nb_eval_presse<- html_allocine %>%
+  html_node(".rating-item:nth-child(1) .stareval-review") %>% # Sélecteur CSS pour la note presse
+  html_text(trim = TRUE)
+
+# Extraire la note spectateur
+note_spectateur <- html_allocine %>%
+  html_node(".rating-item:nth-child(2) .stareval-note") %>% # Sélecteur CSS pour la note spectateur
+  html_text(trim = TRUE)
+
+nb_eval_spectateur<- html_allocine %>%
+  html_node(".rating-item:nth-child(1) .stareval-review") %>% # Sélecteur CSS pour la note presse
+  html_text(trim = TRUE)
+
+# Afficher les résultats
+cat("Note presse :", note_presse, "\n")
+cat("Note spectateur :", note_spectateur, "\n")
 
 film_selector <- "#mw-content-text div ul:nth-of-type(3) li i a"
 film_nodes <- data_html %>% html_nodes(film_selector) %>% html_attrs()
