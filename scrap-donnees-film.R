@@ -169,22 +169,10 @@ note_spectateur <- html_allocine %>%
   html_text(trim = TRUE)
 
 nb_eval_spectateur<- html_allocine %>%
-  html_node(".rating-item:nth-child(1) .stareval-review") %>% # Sélecteur CSS pour la note presse
+  html_node(".rating-item:nth-child(2) .stareval-review") %>% # Sélecteur CSS pour la note presse
   html_text(trim = TRUE)
 
 # Afficher les résultats
-cat("Note presse :", note_presse, "\n")
-cat("Note spectateur :", note_spectateur, "\n")
+cat("Note presse :", note_presse, nb_eval_presse, "\n")
+cat("Note spectateur :", note_spectateur, nb_eval_spectateur, "\n")
 
-film_selector <- "#mw-content-text div ul:nth-of-type(3) li i a"
-film_nodes <- data_html %>% html_nodes(film_selector) %>% html_attrs()
-films <- tibble()
-for(k in seq_along(film_nodes)) {
-  film_node <- film_nodes[[k]]
-  if("class" %in% names(film_node)) next # Absence de page dédiée
-  if(film_node["title"] == "Galadriel") next # Mauvais lien
-  films <- rbind(
-    films,
-    list(titre=film_node["title"], url=film_node["href"])
-  )
-}
